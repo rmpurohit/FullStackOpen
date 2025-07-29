@@ -12,7 +12,7 @@ const Hello = (props) => {
     )
   }
 
-  const Hello = (props) => {
+  const HelloDes = (props) => {
     const { name, age } = props
     const bornYear = () => new Date().getFullYear() - age
   
