@@ -18,3 +18,9 @@ console.log(square(4))
 const cube = p => p * p * p
 
 console.log(cube(3))
+
+const t = [1, 2, 3]
+const tSquared = t.map(p => p * p)
+// tSquared is now [1, 4, 9]
+
+console.log(tSquared)
