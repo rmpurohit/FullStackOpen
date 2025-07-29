@@ -13,4 +13,8 @@ const square = p => {
   }
 
 
-console.log(4)
+console.log(square(4))
+
+const cube = p => p * p * p
+
+console.log(cube(3))
