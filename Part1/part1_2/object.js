@@ -22,3 +22,13 @@ const object1 = {
   console.log("obj1 =======> ",object1)
   console.log("obj2 =======> ",object2)
   console.log("obj3 =======> ",object3)
+
+console.log(object1.name)         // Arto Hellas is printed
+const fieldName = 'age'
+console.log(object1[fieldName])    // 35 is printed
+
+object1.address = 'Helsinki'
+object1['secret number'] = 12341
+
+console.log(object1.address)
+console.log(object1['secret number'])
