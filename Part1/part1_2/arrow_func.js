@@ -24,3 +24,4 @@ const tSquared = t.map(p => p * p)
 // tSquared is now [1, 4, 9]
 
 console.log(tSquared)
+
