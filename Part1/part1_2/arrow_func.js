@@ -5,3 +5,12 @@ const sum = (p1, p2) => {
   }
 
 console.log(sum(1,2))
+
+
+const square = p => {
+    console.log(p)
+    return p * p
+  }
+
+
+console.log(4)
