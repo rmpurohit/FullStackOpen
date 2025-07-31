@@ -1,5 +1,12 @@
 const Person = ({ person }) => {
-    return <li>{person.name}</li>
+    return (
+      <tr>
+        <td>{person.name}</td>
+        <td>{person.number}</td>
+        <td>{person.city}</td>
+      </tr>
+    )
   }
   
   export default Person
+  
