@@ -1,0 +1,16 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "hello_world",
+  "license": "ISC",
+  "author": "RMP",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "test"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
