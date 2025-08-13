@@ -5,7 +5,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+
+    "build:frontend": "npm ci --prefix ../../Frontend/part2-notes-frontend && npm run build --prefix ../../Frontend/part2-notes-frontend",
+    "copy:frontend": "rm -rf dist && cp -R ../../Frontend/part2-notes-frontend/dist ./dist",
+    "build": "npm run build:frontend && npm run copy:frontend"
   },
   "author": "Matti Luukkainen",
   "license": "MIT",
