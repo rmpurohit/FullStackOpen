@@ -1,0 +1,17 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "hello_world",
+  "license": "ISC",
+  "author": "RMP",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node notes_server_express.js",
+    "test": "test",
+    "dev": "node --watch notes_server_express.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

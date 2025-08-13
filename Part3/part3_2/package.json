@@ -1,0 +1,20 @@
+{
+  "name": "phonebook",
+  "version": "1.0.0",
+  "description": "phonebook for backend using express",
+  "license": "ISC",
+  "author": "RMP",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "start": "node middleware.js",
+    "dev": "node --watch middleware.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "mongoose": "^8.17.1",
+    "morgan": "^1.10.1"
+  }
+}
