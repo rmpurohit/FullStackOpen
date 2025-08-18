@@ -1,8 +1,6 @@
-# Replace {{id}} with a valid id
-PUT http://localhost:3001/api/persons/1
+PUT http://localhost:3001/api/persons/PUT_YOUR_ID_HERE
 Content-Type: application/json
 
 {
-  "name": "Arto Hellas",
-  "number": "040-9999999"
+  "number": "09-88888888"
 }

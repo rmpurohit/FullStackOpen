@@ -1,11 +1,11 @@
-### Get all persons
 GET http://localhost:3001/api/persons
 
-### Get info page
+###
 GET http://localhost:3001/info
+Accept: application/json
 
-### Get person by ID (exists)
-GET http://localhost:3001/api/persons/2
+###
+GET http://localhost:3001/api/persons/000000000000000000000000
 
-### Get person by ID (not found)
-GET http://localhost:3001/api/persons/999
+###
+GET http://localhost:3001/api/persons/bad-id

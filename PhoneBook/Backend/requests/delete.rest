@@ -1,5 +1,1 @@
-### Delete person by ID (replace with real id)
-DELETE http://localhost:3001/api/persons/2
-
-### Try deleting non-existing person
-DELETE http://localhost:3001/api/persons/999
+DELETE http://localhost:3001/api/persons/68a3501a84b3e8ce9439f909
