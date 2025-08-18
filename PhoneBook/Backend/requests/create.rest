@@ -3,8 +3,8 @@ POST http://localhost:3001/api/persons
 Content-Type: application/json
 
 {
-  "name": "Liisa Marttinen",
-  "number": "040-243563"
+  "name": "Shania Warner",
+  "number": "040-34455668"
 }
 
 ### Create person without number (should fail)

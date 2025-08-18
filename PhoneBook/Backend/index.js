@@ -1,129 +1,124 @@
-// Phonebook backend
+// index.js
+require('dotenv').config();
+
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors');
+const mongoose = require('mongoose');
+
+const Person = require('./models/person');
+const { unknownEndpoint, errorHandler } = require('./middleware/errorHandlers');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-// --- middleware ---
-// parse JSON bodies
+// ----- Middleware
+app.use(cors());
 app.use(express.json());
 
-// morgan logging
-// tiny format + custom token to print body for POST requests
-morgan.token('body', (req) =>
-  req.method === 'POST' ? JSON.stringify(req.body) : ''
-);
-app.use(
-  morgan(':method :url :status :res[content-length] - :response-time ms :body')
-);
+// Morgan (3.7–3.8): log tiny + POST bodies
+morgan.token('body', (req) => (req.method === 'POST' || req.method === 'PUT') ? JSON.stringify(req.body) : '');
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
 
-// --- in-memory data store ---
-let persons = [
-  {
-    id: '1',
-    name: 'Arto Hellas',
-    number: '040-123456',
-  },
-  {
-    id: '2',
-    name: 'Ada Lovelace',
-    number: '39-44-5323523',
-  },
-  {
-    id: '3',
-    name: 'Dan Abramov',
-    number: '12-43-234345',
-  },
-  {
-    id: '4',
-    name: 'Mary Poppendieck',
-    number: '39-23-6423122',
-  },
-];
+// ----- DB connection
+const { MONGODB_URI, PORT = 3001 } = process.env;
 
-// --- helpers ---
-const generateId = () => {
-  // big enough range to avoid collisions; regenerate on conflict
-  let id;
-  do {
-    id = String(Math.floor(Math.random() * 1_000_000_000));
-  } while (persons.some((p) => p.id === id));
-  return id;
-};
+mongoose.set('strictQuery', false);
 
-const findById = (id) => persons.find((p) => p.id === id);
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
+  });
 
-// --- routes ---
+// ----- Routes
 
-// all persons
-app.get('/api/persons', (req, res) => {
-  res.json(persons);
-});
-
-// info page (count + current time)
-app.get('/info', (req, res) => {
-  const count = persons.length;
-  const time = new Date();
-  res.send(
-    `<p>Phonebook has info for ${count} people</p><p>${time}</p>`
-  );
-});
-
-// single person
-app.get('/api/persons/:id', (req, res) => {
-  const person = findById(req.params.id);
-  if (!person) {
-    return res.status(404).json({ error: 'person not found' });
+// 3.13: Fetch all people from DB
+app.get('/api/persons', async (_req, res, next) => {
+  try {
+    const persons = await Person.find({});
+    res.json(persons);
+  } catch (err) {
+    next(err);
   }
-  res.json(person);
 });
 
-// delete person
-app.delete('/api/persons/:id', (req, res) => {
-  const exists = persons.some((p) => p.id === req.params.id);
-  if (!exists) return res.status(404).json({ error: 'person not found' });
-
-  persons = persons.filter((p) => p.id !== req.params.id);
-  // 204 = no content
-  res.status(204).end();
-});
-
-// create person w/ validation
-app.post('/api/persons', (req, res) => {
-  const { name, number } = req.body || {};
-
-  // basic validation
-  if (!name || !number) {
-    return res
-      .status(400)
-      .json({ error: 'name and number are required' });
+// 3.18: Info uses DB count + current time
+app.get('/info', async (_req, res, next) => {
+  try {
+    const count = await Person.countDocuments({});
+    const time = new Date();
+    res.send(`<p>Phonebook has info for ${count} people</p><p>${time}</p>`);
+  } catch (err) {
+    next(err);
   }
+});
 
-  // uniqueness (case-insensitive to avoid duplicates like "Ada" vs "ada")
-  const exists = persons.some(
-    (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase()
-  );
-  if (exists) {
-    return res.status(400).json({ error: 'name must be unique' });
+// 3.18: Get one by id from DB
+app.get('/api/persons/:id', async (req, res, next) => {
+  try {
+    const person = await Person.findById(req.params.id);
+    if (!person) return res.status(404).json({ error: 'person not found' });
+    res.json(person);
+  } catch (err) {
+    next(err);
   }
-
-  const newPerson = {
-    id: generateId(),
-    name: name.trim(),
-    number: String(number).trim(),
-  };
-
-  persons.push(newPerson);
-  res.status(201).json(newPerson);
 });
 
-// unknown endpoint helper (nice 404 for non-existing routes)
-app.use((req, res) => {
-  res.status(404).json({ error: 'unknown endpoint' });
+// 3.14: Create (save to DB)
+app.post('/api/persons', async (req, res, next) => {
+  try {
+    const { name, number } = req.body || {};
+    if (!name || !number) {
+      return res.status(400).json({ error: 'name and number are required' });
+    }
+
+    const newPerson = new Person({ name: name.trim(), number: String(number).trim() });
+    const saved = await newPerson.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    next(err);
+  }
 });
 
-// --- start server ---
+// 3.17: Update number by id (PUT)
+// Note: validators are added later in the course; for now, a simple update.
+app.put('/api/persons/:id', async (req, res, next) => {
+  try {
+    const { name, number } = req.body || {};
+    if (!name || !number) {
+      return res.status(400).json({ error: 'name and number are required' });
+    }
+
+    const updated = await Person.findByIdAndUpdate(
+      req.params.id,
+      { name: name.trim(), number: String(number).trim() },
+      { new: true } // return the updated document
+    );
+
+    if (!updated) return res.status(404).json({ error: 'person not found' });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 3.15: Delete (remove from DB)
+app.delete('/api/persons/:id', async (req, res, next) => {
+  try {
+    const deleted = await Person.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'person not found' });
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ----- 404 + error handler (3.16)
+app.use(unknownEndpoint);
+app.use(errorHandler);
+
+// ----- Start
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

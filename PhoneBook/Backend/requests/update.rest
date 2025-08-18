@@ -1,0 +1,8 @@
+# Replace {{id}} with a valid id
+PUT http://localhost:3001/api/persons/1
+Content-Type: application/json
+
+{
+  "name": "Arto Hellas",
+  "number": "040-9999999"
+}
