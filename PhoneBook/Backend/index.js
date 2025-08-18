@@ -1,9 +1,10 @@
-// index.js
 require('dotenv').config();
 
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const helmet = require('helmet'); // ✅ suggestion #6
+const rateLimit = require('express-rate-limit'); // ✅ suggestion #6
 const mongoose = require('mongoose');
 
 const Person = require('./models/person');
@@ -12,28 +13,68 @@ const { unknownEndpoint, errorHandler } = require('./middleware/errorHandlers');
 const app = express();
 
 // ----- Middleware
-app.use(cors());
+app.use(helmet()); // ✅ basic security headers
+app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'] })); // tighten as needed
 app.use(express.json());
 
-// Log method, url, status, time, and body for POST/PUT
-morgan.token('body', (req) => (req.method === 'POST' || req.method === 'PUT') ? JSON.stringify(req.body) : '');
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
+// Rate limit (tweak to your needs)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 100, // limit each IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', limiter); // ✅ apply to API routes
+
+// Conditional logging (less noisy in production)
+if (process.env.NODE_ENV !== 'production') {
+  morgan.token('body', (req) => (req.method === 'POST' || req.method === 'PUT') ? JSON.stringify(req.body) : '');
+  app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
+}
 
 // ----- DB connection
 const { MONGODB_URI, PORT = 3001 } = process.env;
 
 if (!MONGODB_URI) {
-  console.error('❌ Missing MONGODB_URI in environment');
-  process.exit(1);
+  throw new Error('Missing MONGODB_URI in environment'); // no process.exit, let it throw
 }
 
+// Helpful Mongoose defaults
 mongoose.set('strictQuery', false);
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
-  });
+mongoose.set('runValidators', true);
+
+// Retry/backoff connect
+async function connectWithRetry(retries = 5, delayMs = 2000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await mongoose.connect(MONGODB_URI);
+      console.log('✅ Connected to MongoDB');
+
+      // Ensure indexes (unique, etc.)
+      await Person.syncIndexes(); // ✅ suggestion #2
+      return;
+    } catch (err) {
+      console.error(`❌ MongoDB connect attempt ${attempt} failed:`, err.message);
+      if (attempt === retries) {
+        throw err; // bubble up for visibility
+      }
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+}
+
+// Call it
+connectWithRetry().catch((err) => {
+  console.error('❌ Could not establish DB connection:', err);
+  // Let the process crash; a process manager (e.g. nodemon/PM2/docker) can restart it.
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down gracefully…');
+  await mongoose.connection.close();
+  process.exit(0);
+});
 
 // ----- Routes
 
@@ -45,12 +86,17 @@ app.get('/api/persons', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Info (count + current time)
-app.get('/info', async (_req, res, next) => {
+// Info (count + current time) with content-negotiation (✅ suggestion #5)
+app.get('/info', async (req, res, next) => {
   try {
     const count = await Person.countDocuments({});
     const time = new Date();
-    res.send(`<p>Phonebook has info for ${count} people</p><p>${time}</p>`);
+
+    if (req.accepts('html')) {
+      return res.send(`<p>Phonebook has info for ${count} people</p><p>${time}</p>`);
+    }
+    // default JSON
+    res.json({ count, time: time.toISOString() });
   } catch (err) { next(err); }
 });
 
@@ -58,7 +104,7 @@ app.get('/info', async (_req, res, next) => {
 app.get('/api/persons/:id', async (req, res, next) => {
   try {
     const person = await Person.findById(req.params.id);
-    if (!person) return res.status(404).json({ error: 'person not found' });
+    if (!person) return res.status(404).json({ error: 'person not found', code: 'NOT_FOUND' }); // ✅ suggestion #3
     res.json(person);
   } catch (err) { next(err); }
 });
@@ -68,7 +114,7 @@ app.post('/api/persons', async (req, res, next) => {
   try {
     const { name, number } = req.body || {};
     const person = new Person({ name, number });
-    const saved = await person.save(); // runs Mongoose validations
+    const saved = await person.save();
     res.status(201).json(saved);
   } catch (err) { next(err); }
 });
@@ -79,14 +125,14 @@ app.put('/api/persons/:id', async (req, res, next) => {
     const { number } = req.body || {};
     const updated = await Person.findByIdAndUpdate(
       req.params.id,
-      { number }, // do not allow name changes via PUT here
+      { number },
       {
-        new: true,            // return updated doc
-        runValidators: true,  // enforce Mongoose validators on update
+        new: true,
+        runValidators: true,
         context: 'query',
       }
     );
-    if (!updated) return res.status(404).json({ error: 'person not found' });
+    if (!updated) return res.status(404).json({ error: 'person not found', code: 'NOT_FOUND' }); // ✅ suggestion #3
     res.json(updated);
   } catch (err) { next(err); }
 });
@@ -95,7 +141,7 @@ app.put('/api/persons/:id', async (req, res, next) => {
 app.delete('/api/persons/:id', async (req, res, next) => {
   try {
     const deleted = await Person.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ error: 'person not found' });
+    if (!deleted) return res.status(404).json({ error: 'person not found', code: 'NOT_FOUND' }); // ✅ suggestion #3
     res.status(204).end();
   } catch (err) { next(err); }
 });

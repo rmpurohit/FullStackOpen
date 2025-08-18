@@ -1,9 +1,6 @@
-// models/person.js
 const mongoose = require('mongoose');
 
 // Phone number validators:
-// A) Two or three digits, hyphen, then one or more digits (e.g., 09-123456, 040-555)
-// B) Total digits >= 8 (ignoring hyphens)
 const phoneValidator = [
   {
     validator: (v) => /^\d{2,3}-\d+$/.test(v),
@@ -21,13 +18,14 @@ const personSchema = new mongoose.Schema(
       type: String,
       required: [true, 'name is required'],
       minLength: [3, 'name must be at least 3 characters long'],
-      // Uncomment after creating a unique index in MongoDB for the collection
-      // unique: true,
-      // index: true,
+      trim: true,        // ✅ suggestion #4
+      unique: true,      // ✅ suggestion #2 (Mongoose will create a unique index)
+      index: true,       // helps ensure index creation
     },
     number: {
       type: String,
       required: [true, 'number is required'],
+      trim: true,        // ✅ suggestion #4
       validate: phoneValidator,
     },
   },
@@ -43,4 +41,5 @@ personSchema.set('toJSON', {
 });
 
 const Person = mongoose.model('Person', personSchema, 'contacts');
+
 module.exports = Person;
