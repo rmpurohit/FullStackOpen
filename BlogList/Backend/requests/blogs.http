@@ -1,0 +1,32 @@
+### Get all blogs
+GET http://localhost:3001/api/blogs
+
+### Create a new blog
+POST http://localhost:3001/api/blogs
+Content-Type: application/json
+
+{
+  "title": "My first blog",
+  "author": "Jane Dev",
+  "url": "https://example.com/my-first-blog",
+  "likes": 3
+}
+
+### Create a blog without likes (defaults to 0)
+POST http://localhost:3001/api/blogs
+Content-Type: application/json
+
+{
+  "title": "Zero like default",
+  "author": "Anon",
+  "url": "https://example.com/zero"
+}
+
+### Bad request (missing title/url)
+POST http://localhost:3001/api/blogs
+Content-Type: application/json
+
+{
+  "author": "Nobody",
+  "likes": 10
+}
