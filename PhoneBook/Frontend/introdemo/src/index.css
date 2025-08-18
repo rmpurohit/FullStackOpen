@@ -75,3 +75,9 @@ h1 { margin: 0 0 16px; }
   .form { max-width: 100%; }
   .table { width: 100%; display: table; }
 }
+
+.btn--danger {
+  background: #f3e5e5;
+  border-color: #e1bcbc;
+}
+.btn--danger:hover { filter: brightness(0.97); }

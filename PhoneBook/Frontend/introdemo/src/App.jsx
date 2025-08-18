@@ -5,41 +5,70 @@ import Persons from './components/Persons.jsx'
 import { personsApi } from './services/persons.js'
 
 const App = () => {
-  const [persons, setPersons] = useState([])            // start empty
-  const [newName, setNewName] = useState('')
-  const [newNumber, setNewNumber] = useState('')
+  const [persons, setPersons] = useState([])
+  const [nameValue, setNameValue] = useState('')
+  const [numberValue, setNumberValue] = useState('')
   const [filter, setFilter] = useState('')
 
-  // fetch once on mount
+  // load initial data
   useEffect(() => {
-    let isActive = true
+    let active = true
     personsApi.getAll()
-      .then(data => {
-        if (isActive) setPersons(data)
-      })
-      .catch(err => {
-        console.error('Failed to fetch persons:', err)
-      })
-    return () => { isActive = false }
+      .then(data => { if (active) setPersons(data) })
+      .catch(err => console.error('Failed to fetch persons:', err))
+    return () => { active = false }
   }, [])
 
-  const handleAddPerson = (e) => {
+  // add or update
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const name = newName.trim()
-    const number = newNumber.trim()
+    const name = nameValue.trim()
+    const number = numberValue.trim()
     if (!name || !number) return
 
-    const exists = persons.some(p => p.name.toLowerCase() === name.toLowerCase())
-    if (exists) {
-      alert(`${name} is already added to phonebook`)
-      return
-    }
+    const existing = persons.find(
+      p => p.name.toLowerCase() === name.toLowerCase()
+    )
 
-    // local add for now (server POST comes in later exercises)
-    const nextId = persons.reduce((m, p) => (Number(p.id) > m ? Number(p.id) : m), 0) + 1
-    setPersons(persons.concat({ id: String(nextId), name, number }))
-    setNewName('')
-    setNewNumber('')
+    try {
+      if (existing) {
+        const ok = window.confirm(
+          `${existing.name} is already added to phonebook, replace the old number with a new one?`
+        )
+        if (!ok) return
+
+        const updated = await personsApi.update(existing.id, {
+          ...existing,
+          number
+        })
+        setPersons(persons.map(p => (p.id === existing.id ? updated : p)))
+      } else {
+        const created = await personsApi.create({ name, number })
+        // json-server may give numeric ids; keep whatever backend returns
+        setPersons(persons.concat(created))
+      }
+
+      setNameValue('')
+      setNumberValue('')
+    } catch (err) {
+      console.error('Save failed:', err)
+      alert('Saving failed. Please try again.')
+    }
+  }
+
+  // delete
+  const handleDelete = async (person) => {
+    const ok = window.confirm(`Delete ${person.name}?`)
+    if (!ok) return
+    try {
+      await personsApi.remove(person.id)
+      setPersons(persons.filter(p => p.id !== person.id))
+    } catch (err) {
+      console.error('Delete failed:', err)
+      alert('Delete failed. The item may have been removed already.')
+      // optionally also remove locally:
+      setPersons(persons.filter(p => p.id !== person.id))
+    }
   }
 
   const personsToShow =
@@ -57,15 +86,15 @@ const App = () => {
 
       <h2 className="section-title">Add a new</h2>
       <PersonForm
-        onSubmit={handleAddPerson}
-        nameValue={newName}
-        onNameChange={(e) => setNewName(e.target.value)}
-        numberValue={newNumber}
-        onNumberChange={(e) => setNewNumber(e.target.value)}
+        onSubmit={handleSubmit}
+        nameValue={nameValue}
+        onNameChange={(e) => setNameValue(e.target.value)}
+        numberValue={numberValue}
+        onNumberChange={(e) => setNumberValue(e.target.value)}
       />
 
       <h2 className="section-title">Numbers</h2>
-      <Persons persons={personsToShow} />
+      <Persons persons={personsToShow} onDelete={handleDelete} />
     </div>
   )
 }
