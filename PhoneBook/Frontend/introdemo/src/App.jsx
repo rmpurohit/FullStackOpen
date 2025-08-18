@@ -1,16 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Filter from './components/Filter.jsx';
 import PersonForm from './components/PersonForm.jsx';
 import Persons from './components/Persons.jsx';
 import Notification from './components/Notification.jsx';
+import Spinner from './components/Spinner.jsx';
 import { personsApi } from './services/persons.js';
+
+// simple debounce hook to avoid filtering every keystroke
+function useDebounced(value, delay = 250) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return v;
+}
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [nameValue, setNameValue] = useState('');
   const [numberValue, setNumberValue] = useState('');
   const [filter, setFilter] = useState('');
-  const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: string }
+  const debouncedFilter = useDebounced(filter, 200);
+  const [message, setMessage] = useState(null); // { type: 'success' | 'error' | 'info', text }
+  const [loading, setLoading] = useState(true);
+  const [initialError, setInitialError] = useState(null);
   const MESSAGE_MS = 4000;
   const messageTimeoutRef = useRef(null);
 
@@ -22,18 +36,33 @@ const App = () => {
 
   // initial fetch
   useEffect(() => {
-    let active = true;
-    personsApi
-      .getAll()
-      .then((data) => { if (active) setPersons(data); })
-      .catch((err) => {
-        const msg = err?.response?.data?.error || err?.message || 'Failed to load persons';
-        showMessage('error', msg);
-      });
-    return () => { active = false; if (messageTimeoutRef.current) window.clearTimeout(messageTimeoutRef.current); };
+    let mounted = true;
+
+    (async () => {
+      try {
+        const data = await personsApi.getAll();
+        if (!mounted) return;
+        setPersons(data);
+      } catch (e) {
+        const n = personsApi.normalizeError(e);
+        if (!mounted) return;
+        setInitialError(n.message);
+        showMessage('error', n.message);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      if (messageTimeoutRef.current) window.clearTimeout(messageTimeoutRef.current);
+    };
   }, []);
 
-  const resetForm = () => { setNameValue(''); setNumberValue(''); };
+  const resetForm = () => {
+    setNameValue('');
+    setNumberValue('');
+  };
 
   // add or update
   const handleSubmit = async (e) => {
@@ -48,29 +77,30 @@ const App = () => {
       if (existing) {
         const ok = window.confirm(`${existing.name} is already added to phonebook, replace the old number with a new one?`);
         if (!ok) return;
-        // server only updates number (backend ignores name on PUT)
-        const updated = await personsApi.update(existing.id, { number });
-        setPersons(persons.map((p) => (p.id === existing.id ? updated : p)));
+        const updated = await personsApi.update(existing.id, { number }); // backend only accepts number
+        setPersons((prev) => prev.map((p) => (p.id === existing.id ? updated : p)));
         showMessage('success', `Updated number for ${updated.name}`);
       } else {
         const created = await personsApi.create({ name, number });
-        setPersons(persons.concat(created));
+        setPersons((prev) => prev.concat(created));
         showMessage('success', `Added ${created.name}`);
       }
       resetForm();
-    } catch (err) {
-      const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.error;
+    } catch (e) {
+      const n = personsApi.normalizeError(e);
 
-      if (existing && status === 404) {
-        // stale client state
+      if (existing && n.status === 404) {
         showMessage('error', `Information of ${existing.name} has already been removed from server`);
-        setPersons(persons.filter((p) => p.id !== existing.id));
-      } else if (serverMsg) {
-        // bubble Mongoose validation errors & API messages
-        showMessage('error', serverMsg);
+        setPersons((prev) => prev.filter((p) => p.id !== existing.id));
+        return;
+      }
+
+      if (n.code === 'DUPLICATE_KEY') {
+        showMessage('error', 'Name must be unique');
+      } else if (n.code === 'VALIDATION_ERROR' || n.status === 400) {
+        showMessage('error', n.message);
       } else {
-        showMessage('error', err?.message || 'Saving failed. Please try again.');
+        showMessage('error', n.message || 'Saving failed. Please try again.');
       }
     }
   };
@@ -81,24 +111,24 @@ const App = () => {
     if (!ok) return;
     try {
       await personsApi.remove(person.id);
-      setPersons(persons.filter((p) => p.id !== person.id));
+      setPersons((prev) => prev.filter((p) => p.id !== person.id));
       showMessage('success', `Deleted ${person.name}`);
-    } catch (err) {
-      const status = err?.response?.status;
-      if (status === 404) {
+    } catch (e) {
+      const n = personsApi.normalizeError(e);
+      if (n.status === 404) {
         showMessage('error', `Information of ${person.name} has already been removed from server`);
-        setPersons(persons.filter((p) => p.id !== person.id));
+        setPersons((prev) => prev.filter((p) => p.id !== person.id));
       } else {
-        const serverMsg = err?.response?.data?.error;
-        showMessage('error', serverMsg || err?.message || 'Delete failed. Please try again.');
+        showMessage('error', n.message || 'Delete failed. Please try again.');
       }
     }
   };
 
-  const personsToShow =
-    filter.trim() === ''
-      ? persons
-      : persons.filter((p) => p.name.toLowerCase().includes(filter.trim().toLowerCase()));
+  const personsToShow = useMemo(() => {
+    const q = debouncedFilter.trim().toLowerCase();
+    if (!q) return persons;
+    return persons.filter((p) => p.name.toLowerCase().includes(q));
+  }, [persons, debouncedFilter]);
 
   return (
     <div className="app">
@@ -118,7 +148,14 @@ const App = () => {
       />
 
       <h2 className="section-title">Numbers</h2>
-      <Persons persons={personsToShow} onDelete={handleDelete} />
+
+      {loading ? (
+        <Spinner />
+      ) : initialError ? (
+        <p className="error-text">Could not load people: {initialError}</p>
+      ) : (
+        <Persons persons={personsToShow} onDelete={handleDelete} />
+      )}
     </div>
   );
 };

@@ -1,12 +1,10 @@
-// src/services/persons.js
-import axios from 'axios'
-//const http = axios.create({ baseURL: 'http://localhost:3001' })           //onyl frontend using vite
-//const http = axios.create({ baseURL: '/api/persons' })                    // proxy
-const http = axios.create({ baseURL: 'http://localhost:3001/api/persons' }) // cors
+import { http, normalizeError } from './http';
 
-const getAll  = async ()           => (await http.get('/')).data
-const create  = async (person)     => (await http.post('/', person)).data
-const update  = async (id, body)   => (await http.put(`/${id}`, body)).data
-const remove  = async (id)         => { await http.delete(`/${id}`) }
+const path = ''; // http already points at /api/persons (or full URL)
 
-export const personsApi = { getAll, create, update, remove }
+const getAll  = async ()         => (await http.get(`${path}/`)).data;
+const create  = async (person)   => (await http.post(`${path}/`, person)).data;
+const update  = async (id, body) => (await http.put(`${path}/${id}`, body)).data;
+const remove  = async (id)       => { await http.delete(`${path}/${id}`); };
+
+export const personsApi = { getAll, create, update, remove, normalizeError };

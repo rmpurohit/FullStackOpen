@@ -1,183 +1,142 @@
-/* =========================
-   Global layout & typography
-   ========================= */
-   * { box-sizing: border-box; }
-   body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-   
-   .app {
-     max-width: 760px;
-     padding: 24px;
-     margin: 0; /* top-left placement to match your current view */
-   }
-   
-   h1 { margin: 0 0 16px; }
-   .section-title { margin: 24px 0 12px; }
-   
-   /* =========================
-      Form grid
-      ========================= */
-   .grid-2 {
-     display: grid;
-     grid-template-columns: 140px minmax(260px, 1fr);
-     column-gap: 14px;
-     row-gap: 12px;
-     align-items: center;
-   }
-   
-   .row {
-     margin: 12px 0 20px;
-     max-width: 520px; /* aligns with form width */
-   }
-   
-   .form { max-width: 520px; }
-   
-   .grid-2 label { font-weight: 600; }
-   .grid-2 input {
-     width: 100%;
-     padding: 8px 10px;
-     font-size: 16px;
-   
-     /* interaction polish */
-     border: 1px solid #c9c9c9;
-     border-radius: 6px;
-     transition: border-color .15s ease, box-shadow .15s ease;
-   }
-   .grid-2 input:hover { border-color: #b2b2b2; }
-   .grid-2 input:focus {
-     border-color: #2563eb;
-     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-   }
-   
-   /* keyboard focus ring (inputs, buttons, links, etc.) */
-   :focus-visible {
-     outline: 3px solid #2563eb;  /* blue-600 */
-     outline-offset: 2px;
-   }
-   
-   /* =========================
-      Buttons
-      ========================= */
-   .btn {
-     padding: 10px 14px;
-     font-size: 16px;
-     border: 1px solid #c9c9c9;
-     border-radius: 6px;
-     background: #ececef;
-     cursor: pointer;
-     transition: filter .12s ease;
-   }
-   .btn:hover { filter: brightness(0.98); }
-   .btn:disabled { opacity: .6; cursor: not-allowed; }
-   .btn:focus-visible {
-     outline: 3px solid rgba(37, 99, 235, .6);
-     outline-offset: 2px;
-   }
-   
-   .btn--danger {
-     background: #f3e5e5;
-     border-color: #e1bcbc;
-   }
-   .btn--danger:hover { filter: brightness(0.97); }
-   .btn--danger:focus-visible {
-     outline: 3px solid rgba(220, 38, 38, .5);
-   }
-   
-   /* =========================
-      Numbers table
-      ========================= */
-   .table {
-     border-collapse: collapse;
-     margin-top: 8px;
-     width: auto;           /* compact, not full width */
-     max-width: 520px;
-     display: inline-table; /* shrink to content */
-     table-layout: auto;
-     overflow-x: auto;      /* support small screens */
-   }
-   
-   .table th, .table td {
-     text-align: left;
-     padding: 10px 12px;
-     border-bottom: 1px solid #e4e4e4;
-   }
-   
-   .table thead th { border-bottom: 2px solid #111; }
-   
-   .table.compact td:first-child,
-   .table.compact th:first-child {
-     padding-right: 28px;   /* add space between columns */
-   }
-   
-   /* very small screens: let table scroll horizontally */
-   @media (max-width: 420px) {
-     .table {
-       display: block;
-       max-width: 100%;
-       overflow-x: auto;
-       -webkit-overflow-scrolling: touch;
-     }
-   }
-   
-   /* =========================
-      Notifications
-      ========================= */
-   .notice {
-     margin: 8px 0 16px;
-     padding: 12px 14px;
-     border-radius: 8px;
-     border: 2px solid transparent;
-     font-weight: 600;
-     max-width: 760px; /* aligns with .app width */
-     background: #fff;
-   }
-   
-   /* subtle entrance animation (respects reduced motion) */
-   @media (prefers-reduced-motion: no-preference) {
-     .notice { animation: notice-pop .18s ease-out; }
-   }
-   @keyframes notice-pop {
-     from { transform: translateY(-4px); opacity: 0; }
-     to   { transform: translateY(0);    opacity: 1; }
-   }
-   
-   .notice--success {
-     background: #e9f7ef;
-     border-color: #b9e2c7;
-     color: #17653a;
-   }
-   
-   .notice--error {
-     background: #fbe9e9;
-     border-color: #f1c2c2;
-     color: #7c1f1f;
-   }
-   
-   /* keep link contrast inside notices */
-   .notice a { color: inherit; text-decoration: underline; }
-   
-   /* =========================
-      Responsive
-      ========================= */
-   @media (max-width: 540px) {
-     .grid-2 { grid-template-columns: 1fr; }
-     .grid-2 label { margin-bottom: 4px; }
-     .form { max-width: 100%; }
-     .table { width: 100%; display: table; }
-   }
-   
-   /* =========================
-      Utilities (optional)
-      ========================= */
-   .visually-hidden {
-     position: absolute !important;
-     height: 1px; width: 1px;
-     overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
-     white-space: nowrap;
-     border: 0; padding: 0; margin: -1px;
-   }
-   
-   .mt-0 { margin-top: 0 !important; }
-   .mb-0 { margin-bottom: 0 !important; }
-   .mt-16 { margin-top: 16px !important; }
-   .mb-16 { margin-bottom: 16px !important; }
-   
+:root {
+  --bg: #0b0c10;
+  --surface: #111318;
+  --text: #e9eef4;
+  --muted: #9aa5b1;
+  --ok: #1faa89;
+  --err: #ea4c4c;
+  --info: #3c91e6;
+  --border: #2a2f36;
+  --focus: #6aa9ff;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell,
+    Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: radial-gradient(1200px 800px at 10% -10%, #162033, #0b0c10);
+  color: var(--text);
+}
+
+.app {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+h1 { margin: 0 0 20px; font-size: 2rem; }
+.section-title { margin: 28px 0 12px; font-size: 1.25rem; color: var(--muted); }
+
+/* grid form */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px 14px;
+  align-items: center;
+}
+.row { margin-bottom: 14px; }
+.form { margin-bottom: 8px; }
+
+label { color: var(--muted); }
+
+input, button {
+  font: inherit;
+}
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+input:focus {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+}
+
+/* buttons */
+.btn {
+  justify-self: start;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--info);
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: translateY(1px); }
+
+.btn--danger { background: var(--err); }
+
+/* table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.table th, .table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.table thead th {
+  background: color-mix(in srgb, var(--surface) 80%, black);
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+}
+.table tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface) 95%, black);
+}
+.cell-right { text-align: right; }
+
+/* notification */
+.notice {
+  margin: 12px 0 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 85%, black);
+}
+.notice--success { border-color: color-mix(in srgb, var(--ok) 40%, var(--border)); }
+.notice--error   { border-color: color-mix(in srgb, var(--err) 40%, var(--border)); }
+.notice--info    { border-color: color-mix(in srgb, var(--info) 40%, var(--border)); }
+
+/* text states */
+.muted { color: var(--muted); }
+.error-text { color: var(--err); }
+
+/* spinner */
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.spinner__dot {
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: var(--info);
+  animation: pulse 1s infinite ease-in-out;
+}
+.spinner__text { color: var(--muted); }
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: .6; }
+  50% { transform: scale(1.6); opacity: 1; }
+}
+
+/* a11y helpers */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+}
