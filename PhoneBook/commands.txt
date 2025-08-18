@@ -4,3 +4,6 @@ npm install
 alias gpush='f() { git add . && git commit -m "$1" && git push -u origin main; }; f'
 gpush ""
 npm run dev
+
+npm install json-server --save-dev
+npm run server
