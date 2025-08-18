@@ -8,12 +8,16 @@ const Persons = ({ persons, onDelete }) => (
       </tr>
     </thead>
     <tbody>
-      {persons.map(p => (
+      {persons.map((p) => (
         <tr key={p.id}>
           <td>{p.name}</td>
           <td>{p.number}</td>
           <td>
-            <button type="button" className="btn btn--danger" onClick={() => onDelete(p)}>
+            <button
+              type="button"
+              className="btn btn--danger"
+              onClick={() => onDelete(p)}
+            >
               delete
             </button>
           </td>
@@ -21,6 +25,6 @@ const Persons = ({ persons, onDelete }) => (
       ))}
     </tbody>
   </table>
-)
+);
 
-export default Persons
+export default Persons;
