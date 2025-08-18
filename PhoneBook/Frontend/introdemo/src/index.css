@@ -81,3 +81,25 @@ h1 { margin: 0 0 16px; }
   border-color: #e1bcbc;
 }
 .btn--danger:hover { filter: brightness(0.97); }
+
+/* Notifications */
+.notice {
+  margin: 8px 0 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  font-weight: 600;
+  max-width: 760px; /* aligns with .app width */
+}
+
+.notice--success {
+  background: #e9f7ef;
+  border-color: #b9e2c7;
+  color: #17653a;
+}
+
+.notice--error {
+  background: #fbe9e9;
+  border-color: #f1c2c2;
+  color: #7c1f1f;
+}

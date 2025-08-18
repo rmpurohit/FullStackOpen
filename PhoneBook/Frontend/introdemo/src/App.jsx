@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Filter from './components/Filter.jsx'
 import PersonForm from './components/PersonForm.jsx'
 import Persons from './components/Persons.jsx'
+import Notification from './components/Notification.jsx'
 import { personsApi } from './services/persons.js'
 
 const App = () => {
@@ -9,13 +10,22 @@ const App = () => {
   const [nameValue, setNameValue] = useState('')
   const [numberValue, setNumberValue] = useState('')
   const [filter, setFilter] = useState('')
+  const [message, setMessage] = useState(null) // { type: 'success'|'error', text: string }
+  const MESSAGE_MS = 4000
 
-  // load initial data
+  // helper to show auto-dismissing messages
+  const showMessage = (type, text) => {
+    setMessage({ type, text })
+    window.clearTimeout(showMessage._t)
+    showMessage._t = window.setTimeout(() => setMessage(null), MESSAGE_MS)
+  }
+
+  // initial fetch
   useEffect(() => {
     let active = true
     personsApi.getAll()
       .then(data => { if (active) setPersons(data) })
-      .catch(err => console.error('Failed to fetch persons:', err))
+      .catch(() => showMessage('error', 'Failed to load persons'))
     return () => { active = false }
   }, [])
 
@@ -26,9 +36,7 @@ const App = () => {
     const number = numberValue.trim()
     if (!name || !number) return
 
-    const existing = persons.find(
-      p => p.name.toLowerCase() === name.toLowerCase()
-    )
+    const existing = persons.find(p => p.name.toLowerCase() === name.toLowerCase())
 
     try {
       if (existing) {
@@ -37,37 +45,44 @@ const App = () => {
         )
         if (!ok) return
 
-        const updated = await personsApi.update(existing.id, {
-          ...existing,
-          number
-        })
+        const updated = await personsApi.update(existing.id, { ...existing, number })
         setPersons(persons.map(p => (p.id === existing.id ? updated : p)))
+        showMessage('success', `Updated number for ${updated.name}`)
       } else {
         const created = await personsApi.create({ name, number })
-        // json-server may give numeric ids; keep whatever backend returns
         setPersons(persons.concat(created))
+        showMessage('success', `Added ${created.name}`)
       }
-
       setNameValue('')
       setNumberValue('')
     } catch (err) {
-      console.error('Save failed:', err)
-      alert('Saving failed. Please try again.')
+      // If resource vanished on server (e.g., 404 on update)
+      if (existing && err?.response?.status === 404) {
+        showMessage('error', `Information of ${existing.name} has already been removed from server`)
+        // keep UI consistent with server:
+        setPersons(persons.filter(p => p.id !== existing.id))
+      } else {
+        showMessage('error', 'Saving failed. Please try again.')
+      }
     }
   }
 
-  // delete
+  // delete person
   const handleDelete = async (person) => {
     const ok = window.confirm(`Delete ${person.name}?`)
     if (!ok) return
     try {
       await personsApi.remove(person.id)
       setPersons(persons.filter(p => p.id !== person.id))
+      showMessage('success', `Deleted ${person.name}`)
     } catch (err) {
-      console.error('Delete failed:', err)
-      alert('Delete failed. The item may have been removed already.')
-      // optionally also remove locally:
-      setPersons(persons.filter(p => p.id !== person.id))
+      // If already removed on server
+      if (err?.response?.status === 404) {
+        showMessage('error', `Information of ${person.name} has already been removed from server`)
+        setPersons(persons.filter(p => p.id !== person.id))
+      } else {
+        showMessage('error', 'Delete failed. Please try again.')
+      }
     }
   }
 
@@ -81,6 +96,9 @@ const App = () => {
   return (
     <div className="app">
       <h1>Phonebook</h1>
+
+      {/* success/error banner */}
+      <Notification message={message} />
 
       <Filter value={filter} onChange={(e) => setFilter(e.target.value)} />
 
