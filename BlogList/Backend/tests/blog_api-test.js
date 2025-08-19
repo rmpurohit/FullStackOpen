@@ -1,11 +1,8 @@
-// node:test runner
 const { before, after, beforeEach, describe, test } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
-const dotenv = require('dotenv')
-
-dotenv.config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' })
+require('dotenv').config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' })
 
 const app = require('../app')
 const Blog = require('../models/blog')
@@ -15,8 +12,6 @@ const api = supertest(app)
 
 describe('blog API', () => {
   before(async () => {
-    // Connect once for all tests (uses TEST_MONGODB_URI via config)
-    // app/index.js already uses config; here we only need mongoose connection if not initiated
     if (mongoose.connection.readyState === 0) {
       const { MONGODB_URI } = require('../utils/config')
       await mongoose.connect(MONGODB_URI)
@@ -24,7 +19,6 @@ describe('blog API', () => {
   })
 
   beforeEach(async () => {
-    // Clean and seed
     await Blog.deleteMany({})
     await Blog.insertMany(helper.initialBlogs)
   })
@@ -33,13 +27,13 @@ describe('blog API', () => {
     await mongoose.connection.close()
   })
 
-  // 4.8: GET returns correct amount in JSON
+  // 4.8
   test('GET /api/blogs returns JSON with correct amount', async () => {
     const res = await api.get('/api/blogs').expect(200).expect('Content-Type', /application\/json/)
     assert.strictEqual(res.body.length, helper.initialBlogs.length)
   })
 
-  // 4.9: unique identifier is "id"
+  // 4.9
   test('blogs use "id" field instead of "_id"', async () => {
     const res = await api.get('/api/blogs').expect(200)
     for (const blog of res.body) {
@@ -48,7 +42,7 @@ describe('blog API', () => {
     }
   })
 
-  // 4.10: POST creates a new blog
+  // 4.10
   test('POST /api/blogs creates a new blog', async () => {
     const newBlog = {
       title: 'New adventures',
@@ -66,20 +60,19 @@ describe('blog API', () => {
     assert.ok(titles.includes('New adventures'))
   })
 
-  // 4.11*: likes default to 0 if missing
+  // 4.11*
   test('POST defaults likes to 0 when missing', async () => {
     const newBlog = {
       title: 'Zero like default',
       author: 'Anon',
       url: 'https://example.com/zero',
-      // no likes
     }
 
     const res = await api.post('/api/blogs').send(newBlog).expect(201)
     assert.strictEqual(res.body.likes, 0)
   })
 
-  // 4.12*: 400 when title or url missing
+  // 4.12*
   test('POST 400 when title is missing', async () => {
     const bad = { author: 'No Title', url: 'https://x.y' }
     await api.post('/api/blogs').send(bad).expect(400)
@@ -96,7 +89,7 @@ describe('blog API', () => {
     assert.strictEqual(blogsAfter.length, helper.initialBlogs.length)
   })
 
-  // 4.13: DELETE a single blog
+  // 4.13
   test('DELETE /api/blogs/:id removes a blog', async () => {
     const startBlogs = await helper.blogsInDb()
     const toDelete = startBlogs[0]
@@ -110,7 +103,7 @@ describe('blog API', () => {
     assert.ok(!ids.includes(toDelete.id))
   })
 
-  // 4.14: PUT updates a blog (likes)
+  // 4.14
   test('PUT /api/blogs/:id updates likes', async () => {
     const startBlogs = await helper.blogsInDb()
     const target = startBlogs[0]
@@ -129,13 +122,12 @@ describe('blog API', () => {
     assert.strictEqual(updated.likes, newLikes)
   })
 
-  // Extra: PUT non-existing id -> 404
+  // extras (nice-to-have)
   test('PUT returns 404 for non-existing id', async () => {
     const nonExistingId = new mongoose.Types.ObjectId().toString()
     await api.put(`/api/blogs/${nonExistingId}`).send({ likes: 99 }).expect(404)
   })
 
-  // Extra: DELETE with malformed id -> 400 via middleware
   test('DELETE with malformed id -> 400', async () => {
     await api.delete('/api/blogs/not-a-valid-id').expect(400)
   })

@@ -37,9 +37,8 @@ router.post('/', async (req, res, next) => {
 // DELETE /api/blogs/:id — delete a single blog
 router.delete('/:id', async (req, res, next) => {
   try {
-    const { id } = req.params
-    await Blog.findByIdAndDelete(id)
-    return res.status(204).end()
+    await Blog.findByIdAndDelete(req.params.id)
+    res.status(204).end()
   } catch (err) {
     next(err)
   }
@@ -48,17 +47,14 @@ router.delete('/:id', async (req, res, next) => {
 // PUT /api/blogs/:id — update a blog (primarily likes)
 router.put('/:id', async (req, res, next) => {
   try {
-    const { id } = req.params
     const body = req.body || {}
-
-    // Allow partial updates; but we’ll validate required fields if present
     const update = {}
     if ('title' in body) update.title = body.title
     if ('author' in body) update.author = body.author
     if ('url' in body) update.url = body.url
     if ('likes' in body) update.likes = body.likes
 
-    const updated = await Blog.findByIdAndUpdate(id, update, {
+    const updated = await Blog.findByIdAndUpdate(req.params.id, update, {
       new: true,
       runValidators: true,
       context: 'query',
@@ -67,7 +63,6 @@ router.put('/:id', async (req, res, next) => {
     if (!updated) {
       return res.status(404).json({ error: 'blog not found' })
     }
-
     res.json(updated)
   } catch (err) {
     next(err)
