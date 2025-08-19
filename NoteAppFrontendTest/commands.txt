@@ -1,0 +1,2 @@
+run create.rest to create a user in noteApp databse in dev mode
+in browser go to console and logout using localStorage.removeItem('loggedNoteappUser'); location.reload();

@@ -1,7 +1,11 @@
-POST http://localhost:3001/api/login
+@baseUrl = http://localhost:3001
+
+### Create user in dev (DB = noteApp)
+POST {{baseUrl}}/api/users
 Content-Type: application/json
 
 {
-  "username": "mluukkai",
-  "password": "salainen"
+  "username": "tester",
+  "name": "Test User",
+  "password": "sekret"
 }
