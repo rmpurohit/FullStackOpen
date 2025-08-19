@@ -1,0 +1,13 @@
+rm -rf .git  
+find . -name ".git" -type d -exec rm -rf {} +  
+git init 
+npm create vite@latest introdemo -- --template react 
+alias gpush='f() { git add . && git commit -m "$1" && git push -u origin main; }; f' 
+npm install cross-env
+npm install --save-dev supertest
+
+
+npm test -- --test-only
+npm test -- tests/note_api.test.js
+npm test -- --test-name-pattern="notes are returned as json"
+npm run test -- --test-name-pattern="notes"
